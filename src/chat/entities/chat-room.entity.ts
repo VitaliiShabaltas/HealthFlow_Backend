@@ -33,9 +33,9 @@ export class ChatRoom {
 
   // Could add lastMessageAt, lastMessageSnippet if needed for previews
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+  @UpdateDateColumn()
   updatedAt: Date;
 }

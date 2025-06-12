@@ -44,12 +44,12 @@ export class ChatMessage {
   @Column('text')
   content: string;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+  @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ type: 'timestamp', nullable: true, name: 'read_at' })
+  @Column({ type: 'datetime', nullable: true, name: 'read_at' })
   readAt?: Date | null;
 }

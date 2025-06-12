@@ -15,7 +15,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { SpecializationsModule } from './specializations/specializations.module';
 import { TimeTableModule } from './time-table/time-table.module';
 import { UsersModule } from './users/users.module';
-
+import { SeedModule } from './seed/seed.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -45,6 +45,7 @@ import { UsersModule } from './users/users.module';
     FavoriteDoctorsModule,
     LiqpayModule,
     ChatModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],

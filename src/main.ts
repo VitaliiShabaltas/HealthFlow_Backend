@@ -6,7 +6,13 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
+  const cors = require('cors');
+  app.use(
+    cors({
+      origin: 'http://localhost:5173', // дозволь свій фронтенд
+      credentials: true,
+    }),
+  );
   app.useGlobalPipes(new ValidationPipe());
   app.use(
     helmet({
@@ -14,7 +20,11 @@ async function bootstrap() {
     }),
   );
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://healthflowfrontend-production.up.railway.app'],
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://healthflowfrontend-production.up.railway.app',
+    ],
     credentials: true,
   });
 

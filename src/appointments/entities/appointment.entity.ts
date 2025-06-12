@@ -59,7 +59,7 @@ export class Appointment {
   @Column({ type: 'datetime', nullable: true })
   payment_date: Date | null;
 
-  @CreateDateColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn()
   created_at: Date;
 
   // If you need a relation back to Review (one-to-one)

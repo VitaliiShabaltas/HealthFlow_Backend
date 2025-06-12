@@ -42,7 +42,7 @@ export class Review {
   @Column({ type: 'text', nullable: true })
   review: string | null;
 
-  @CreateDateColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn()
   created_at: Date;
 
   @Column({ type: 'boolean', default: false })

@@ -45,7 +45,7 @@ export class Doctor {
   @JoinColumn({ name: 'department_id' })
   department: Department | null;
 
-  @Column({ type: 'bigint', unsigned: true, nullable: true }) // Matches DDL
+  @Column({ type: 'int', unsigned: false, nullable: true }) // або просто `type: 'int'`
   department_id: number | null;
 
   @Column({ type: 'int', nullable: true })
