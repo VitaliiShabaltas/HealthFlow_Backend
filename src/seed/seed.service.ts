@@ -4,9 +4,9 @@ import { Repository } from 'typeorm';
 import { Department } from '../departments/entities/department.entity';
 import { Specialization } from '../specializations/entities/specialization.entity';
 import { Doctor } from '../doctors/entities/doctor.entity';
-import { DeepPartial } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/entities/user.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class SeedService implements OnModuleInit {
@@ -18,112 +18,180 @@ export class SeedService implements OnModuleInit {
     @InjectRepository(Doctor)
     private readonly docRepo: Repository<Doctor>,
     @InjectRepository(User)
-    private readonly userRepo: Repository<User>, // ← додай це
+    private readonly userRepo: Repository<User>,
   ) {}
 
-  async onModuleInit() {
-    // 1. Departments
-    const countDept = await this.deptRepo.count();
-    if (countDept === 0) {
-      const departments: DeepPartial<Department>[] = [
-        {
-          name: 'Терапевтичне відділення',
-          location: 'Поверх 1',
-        },
-        {
-          name: 'Педіатричне відділення',
-          location: 'Поверх 2',
-        },
-        {
-          name: 'Відділ спеціальної медицини',
-          location: 'Поверх 3',
-        },
-      ];
-
-      await this.deptRepo.save(departments);
+  private async createDepartmentIfNotExists(name: string, location: string) {
+    const existing = await this.deptRepo.findOneBy({ name });
+    if (!existing) {
+      return this.deptRepo.save({ name, location });
     }
+    return existing;
+  }
 
-    // Отримаємо відділення з БД
-    const departments = await this.deptRepo.find();
-    const generalTherapy = departments.find(
-      (d) => d.name === 'Терапевтичне відділення',
+  private async createSpecializationIfNotExists(
+    label: string,
+    departmentId: number,
+  ) {
+    const existing = await this.specRepo.findOneBy({
+      label,
+      department_id: departmentId,
+    });
+    if (!existing) {
+      return this.specRepo.save({ label, department_id: departmentId });
+    }
+    return existing;
+  }
+
+  private async createUserIfNotExists(userData: Partial<User>) {
+    const existing = await this.userRepo.findOneBy({ email: userData.email });
+    if (!existing) {
+      return this.userRepo.save(userData);
+    }
+    return existing;
+  }
+
+  private async createDoctorIfNotExists(doctorData: Partial<Doctor>) {
+    const existing = await this.docRepo.findOneBy({
+      doctor_id: doctorData.doctor_id,
+    });
+    if (!existing) {
+      return this.docRepo.save(doctorData);
+    }
+    return existing;
+  }
+
+  async onModuleInit() {
+    const hashedPassword = await bcrypt.hash('test123', 10);
+
+    // 1. Departments
+    const generalTherapy = await this.createDepartmentIfNotExists(
+      'Терапевтичне відділення',
+      'Поверх 1',
     );
-    const pediatricsDept = departments.find(
-      (d) => d.name === 'Педіатричне відділення',
+    const pediatricsDept = await this.createDepartmentIfNotExists(
+      'Педіатричне відділення',
+      'Поверх 2',
     );
-    const specialMedicine = departments.find(
-      (d) => d.name === 'Відділ спеціальної медицини',
+    const specialMedicine = await this.createDepartmentIfNotExists(
+      'Відділ спеціальної медицини',
+      'Поверх 3',
     );
 
     // 2. Specializations
-    const countSpec = await this.specRepo.count();
-    if (
-      countSpec === 0 &&
-      generalTherapy &&
-      pediatricsDept &&
-      specialMedicine
-    ) {
-      await this.specRepo.save([
-        // Терапевтичне відділення
-        { label: 'Загальна терапія', department_id: generalTherapy.id },
-        { label: 'Гастроентерологія', department_id: generalTherapy.id },
-        { label: 'Кардіологія', department_id: generalTherapy.id },
-        { label: 'Неврологія', department_id: generalTherapy.id },
-        { label: 'Ендокринологія', department_id: generalTherapy.id },
-        { label: 'Сімейна медицина', department_id: generalTherapy.id },
+    // Терапевтичне відділення
+    await this.createSpecializationIfNotExists(
+      'Загальна терапія',
+      generalTherapy.id,
+    );
+    await this.createSpecializationIfNotExists(
+      'Гастроентерологія',
+      generalTherapy.id,
+    );
+    const cardioSpec = await this.createSpecializationIfNotExists(
+      'Кардіологія',
+      generalTherapy.id,
+    );
+    await this.createSpecializationIfNotExists('Неврологія', generalTherapy.id);
+    await this.createSpecializationIfNotExists(
+      'Ендокринологія',
+      generalTherapy.id,
+    );
+    await this.createSpecializationIfNotExists(
+      'Сімейна медицина',
+      generalTherapy.id,
+    );
 
-        // Педіатричне відділення
-        { label: 'Педіатрія', department_id: pediatricsDept.id },
-        { label: 'Логопедія', department_id: pediatricsDept.id },
-        { label: 'Психологія', department_id: pediatricsDept.id },
+    // Педіатричне відділення
+    const pediSpec = await this.createSpecializationIfNotExists(
+      'Педіатрія',
+      pediatricsDept.id,
+    );
+    await this.createSpecializationIfNotExists('Логопедія', pediatricsDept.id);
+    await this.createSpecializationIfNotExists('Психологія', pediatricsDept.id);
 
-        // Відділ спеціальної медицини
-        { label: 'Урологія', department_id: specialMedicine.id },
-        { label: 'Гінекологія', department_id: specialMedicine.id },
-        {
-          label: 'Ортопедія та травматологія',
-          department_id: specialMedicine.id,
-        },
-        { label: 'Дерматологія', department_id: specialMedicine.id },
-        { label: 'Офтальмологія', department_id: specialMedicine.id },
-        { label: 'Отоларингологія', department_id: specialMedicine.id },
-        { label: 'Психотерапія', department_id: specialMedicine.id },
-      ]);
-    }
+    // Відділ спеціальної медицини
+    await this.createSpecializationIfNotExists('Урологія', specialMedicine.id);
+    await this.createSpecializationIfNotExists(
+      'Гінекологія',
+      specialMedicine.id,
+    );
+    await this.createSpecializationIfNotExists(
+      'Ортопедія та травматологія',
+      specialMedicine.id,
+    );
+    await this.createSpecializationIfNotExists(
+      'Дерматологія',
+      specialMedicine.id,
+    );
+    await this.createSpecializationIfNotExists(
+      'Офтальмологія',
+      specialMedicine.id,
+    );
+    await this.createSpecializationIfNotExists(
+      'Отоларингологія',
+      specialMedicine.id,
+    );
+    await this.createSpecializationIfNotExists(
+      'Психотерапія',
+      specialMedicine.id,
+    );
 
-    // 3. Doctors
-    const countDoc = await this.docRepo.count();
-    if (countDoc === 0) {
-      const cardioSpec = await this.specRepo.findOneBy({
-        label: 'Кардіологія',
-      });
-      const pediSpec = await this.specRepo.findOneBy({ label: 'Педіатрія' });
+    // 3. Users: Doctor, Client, Manager, Moderator
+    const userDoctor = await this.createUserIfNotExists({
+      name: 'Василь',
+      surname: 'Іваненко',
+      middlename: 'Гафрилов',
+      date_of_birth: new Date('1980-05-20'),
+      email: 'doc1@example.com',
+      phone: '+380501112233',
+      password_hash: hashedPassword,
+      role: UserRole.DOCTOR,
+    });
 
-      if (!cardioSpec || !pediSpec || !generalTherapy || !pediatricsDept) {
-        return;
-      }
+    const userClient = await this.createUserIfNotExists({
+      name: 'Олена',
+      surname: 'Петренко',
+      middlename: '',
+      date_of_birth: new Date('1990-07-15'),
+      email: 'client1@example.com',
+      phone: '+380671234567',
+      password_hash: hashedPassword,
+      role: UserRole.CLIENT,
+    });
 
-      const user1 = await this.userRepo.save({
-        user_id: 1,
-        name: 'Кардіолог',
-        surname: 'Іваненко',
-        date_of_birth: new Date('1980-05-20'),
-        email: 'doc1@example.com',
-        phone: '+380501112233',
-        password_hash: 'somehash',
-        role: UserRole.DOCTOR,
-      });
+    const userManager = await this.createUserIfNotExists({
+      name: 'Ігор',
+      surname: 'Коваленко',
+      middlename: '',
+      date_of_birth: new Date('1985-01-10'),
+      email: 'manager1@example.com',
+      phone: '+380631112233',
+      password_hash: hashedPassword,
+      role: UserRole.MANAGER,
+    });
 
-      await this.docRepo.save({
-        doctor_id: user1.user_id, // Same ID as user
-        user: user1,
-        specialization_id: cardioSpec.id.toString(),
-        department_id: generalTherapy.id,
-        rating: null,
-        experience_years: 5,
-        cabinet: 'A-101',
-        consultation_price: 150.0,
-      });
-    }
+    const userModerator = await this.createUserIfNotExists({
+      name: 'Марія',
+      surname: 'Сидоренко',
+      middlename: '',
+      date_of_birth: new Date('1988-03-22'),
+      email: 'moderator1@example.com',
+      phone: '+380661223344',
+      password_hash: hashedPassword,
+      role: UserRole.MODERATOR,
+    });
+
+    // 4. Doctors linked to users
+    await this.createDoctorIfNotExists({
+      doctor_id: userDoctor.user_id,
+      user: userDoctor,
+      specialization_id: cardioSpec.id.toString(),
+      department_id: generalTherapy.id,
+      rating: null,
+      experience_years: 5,
+      cabinet: 'A-101',
+      consultation_price: 150.0,
+    });
   }
 }
